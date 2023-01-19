@@ -1,0 +1,89 @@
+version: "3.3"
+
+services:
+
+  reverse-proxy:
+    image: "traefik:v2.3"
+    container_name: "reverse-proxy"
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - "web"
+
+  frontend:
+    container_name: "frontend-service"
+    build:
+      context: frontend/php-apache
+    volumes:
+      - "../frontend:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`laravel-microservices-example.local`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+    networks:
+      - "web"
+
+  api:
+    container_name: "api-gateway"
+    build:
+      context: api-gateway/php-apache
+    volumes:
+      - "../api-gateway:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api_gateway.rule=Host(`api-gateway.laravel-microservices-example.local`)"
+      - "traefik.http.routers.api_gateway.entrypoints=web"
+    networks:
+      - "web"
+
+  order:
+    container_name: "order-service"
+    build:
+      context: order/php-apache
+    volumes:
+      - "../order:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.order.rule=Host(`order.laravel-microservices-example.local`)"
+      - "traefik.http.routers.order.entrypoints=web"
+    networks:
+      - "web"
+
+  product:
+    container_name: "product-service"
+    build:
+      context: product/php-apache
+    volumes:
+      - "../product:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.product.rule=Host(`product.laravel-microservices-example.local`)"
+      - "traefik.http.routers.product.entrypoints=web"
+    networks:
+      - "web"
+
+  user:
+    container_name: "user-service"
+    build:
+      context: user/php-apache
+    volumes:
+      - "../user:/var/www/html"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=Host(`user.laravel-microservices-example.local`)"
+      - "traefik.http.routers.user.entrypoints=web"
+    networks:
+      - "web"
+
+networks:
+  web:
+    external: true
